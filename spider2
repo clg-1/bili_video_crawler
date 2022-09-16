@@ -1,0 +1,72 @@
+import requests
+import re
+import json
+import subprocess
+
+def get_response(html_url):
+    headers = {'referer': 'https://www.bilibili.com/',
+               'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'}
+    response = requests.get(url=html_url,headers=headers)
+    return response
+
+def get_video_info(html_url):
+    response = get_response(html_url=html_url)
+    title = re.findall('<meta data-vue-meta="true" itemprop="name" name="title" content="(.*?)">', response.text)[0]  # 标题
+    html_data = re.findall('<script>window.__playinfo__=(.*?)</script>', response.text)[0]  # 播放信息
+    json_data = json.loads(html_data)
+    # pprint.pprint(json_data)
+    audio_url = json_data['data']['dash']['audio'][0]['baseUrl']
+    video_url = json_data['data']['dash']['video'][0]['baseUrl']
+    video_info = [title, audio_url, video_url]
+    return video_info
+
+def save(title, audio_url, video_url):
+    audio_content = get_response(html_url=audio_url).content
+    video_content = get_response(html_url=video_url).content
+    with open( title + '.mp3', mode='wb') as f:
+        f.write(audio_content)
+    with open(title + '.mp4', mode='wb') as f:
+        f.write(video_content)
+    print(title, "保存成功-------")
+
+
+def merge_data(video_name):
+    print('视频合成开始：', video_name)
+    video_name2 = video_name[1:6]
+    cmd = f"ffmpeg -i {video_name}.mp4 -i {video_name}.mp3 -c:v copy -c:a aac -strict experimental {video_name2}output.mp4"
+    subprocess.run(cmd, shell=True)
+    print('视频合成结束：', video_name)
+
+
+def del_temp(video_info):
+    video_name = video_info[0]
+    cmd_del_mp4 = f"del {video_name}.mp4"
+    cmd_del_mp3 = f"del {video_name}.mp3"
+    subprocess.run(cmd_del_mp4,shell=True)
+    subprocess.run(cmd_del_mp3,shell=True)
+    print("临时文件清理干净.....")
+
+def mv_words():
+    cmd_mv = f"move *.mp4 d:/scripyoutput/"
+    subprocess.run(cmd_mv,shell=True)
+    print("文件移动成功------>>>> d:/scripyoutput/")
+
+
+def main(bv_id):
+    url = f'https://www.bilibili.com/video/{bv_id}'
+    video_info = get_video_info(url)
+    save(video_info[0], video_info[1], video_info[2])
+    merge_data(video_info[0])
+    del_temp(video_info)
+    mv_words()
+
+keyword = input('请输入你要下载的视频BV号：')
+main(keyword)
+# 水果   BV11Y4y1H7QU
+# 4k   BV1tQ4y1q7P1
+# 导数   BV15j411f7Po?p=25
+# url='https://www.bilibili.com/video/BV11Y4y1H7QU?spm_id_from=333.1007.partition_recommend.content.click'
+#res = get_response(html_url=url)
+# print(res.text)
+# music   BV1qW411A73o
+# math    BV13L4y1K7yR
