@@ -1,0 +1,36 @@
+import requests
+from lxml import etree
+
+def get_response(url):
+    headers = {'referer': 'https://www.bilibili.com/',
+               'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0',
+               }
+    response = requests.get(url=url,headers=headers)
+    return response
+
+def get_more_url(url):
+    response = get_response(url=url)
+    html_data = etree.HTML(response.text)
+    urls = html_data.xpath('//div[@class="video-page-card-small"]//a/@href')
+    return urls
+list_temp = []
+lists = []
+
+with open('d:/list.txt','r') as f:
+    li = f.readlines()
+    for l in li:
+        list_temp.append(l.strip())
+
+
+for url in list_temp:
+    new_urls = get_more_url(url=url)
+    for new_url in new_urls:
+        if len(new_url) >30:
+
+            f_url = 'https://www.bilibili.com/' + new_url[1:20] + '?vd_source=80161c470f0c8f2830b2fd56486966df'
+            lists.append(f_url)
+
+lists = list(set(lists))
+with open('d:/lists.txt','w') as f:
+    for url in lists:
+        f.write(url+'\n')
