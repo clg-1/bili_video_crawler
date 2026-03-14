@@ -21,14 +21,14 @@ def get_urls(html_data):
 
 with open('d:/scripyoutput/key_words_list.txt','r',encoding='utf-8') as f:
     key_words_list = f.readlines()
-    print('本次搜索关键词的个数为：  '+len(key_words_list))
+
+    print('本次搜索关键词的个数为：  '+ str(len(key_words_list)))
     new_list_urls = []
     for key_word in key_words_list:
         html_data = get_response(f'https://search.bilibili.com/all?keyword={key_word.strip()}')
         list_urls = get_urls(html_data)
 
         for url in list_urls:
-
             if len(url)<100:
                 new_url = 'https://'+url[2:-1]
                 new_list_urls.append(new_url)
@@ -37,7 +37,11 @@ with open('d:/scripyoutput/key_words_list.txt','r',encoding='utf-8') as f:
 with open('d:/scripyoutput/list.txt','w',encoding='utf-8') as f:
     for url in new_list_urls:
         f.write(url+'/?vd_source=80161c470f0c8f2830b2fd56486966df'+'\n')
-    print('共生成搜索列表的长度为：   '+len(new_list_urls)+'-------------------------------')
+    print('共生成搜索列表的长度为：   '+str(len(new_list_urls))+'-------------------------------')
+    
+with open('d:/scripyoutput/key_words_list.txt','w',encoding='utf-8') as f:
+    f.write('')
+    print('清除搜索关键词列表已完成**************************')
 
 prompt = "\n  所有任务已经全部完成--------请输入'q'退出程序界面 :   "
 message = ''
