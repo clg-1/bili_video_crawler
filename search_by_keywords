@@ -16,7 +16,7 @@ def get_more_url(url):
 list_temp = []
 lists = []
 
-with open('d:/list.txt','r') as f:
+with open('d:/scripyoutput/keywords.txt','r') as f:
     li = f.readlines()
     for l in li:
         list_temp.append(l.strip())
@@ -31,6 +31,6 @@ for url in list_temp:
             lists.append(f_url)
 
 lists = list(set(lists))
-with open('d:/lists.txt','w') as f:
+with open('d:/scripyoutput/list.txt','w') as f:
     for url in lists:
         f.write(url+'\n')
