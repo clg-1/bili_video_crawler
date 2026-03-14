@@ -1,36 +1,45 @@
+from time import sleep
+
 import requests
 from lxml import etree
+'''
+功能： 读取 d:/key_words_list.txt 中关键词，利用B站搜索后，形成第一页搜索网址，保存在  d:/url_list.txt
+'''
 
-def get_response(url):
+def get_response(html_url):
     headers = {'referer': 'https://www.bilibili.com/',
-               'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0',
-               }
-    response = requests.get(url=url,headers=headers)
+               'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.3'}
+    response = requests.get(url=html_url,headers=headers)
     return response
 
-def get_more_url(url):
-    response = get_response(url=url)
-    html_data = etree.HTML(response.text)
-    urls = html_data.xpath('//div[@class="video-page-card-small"]//a/@href')
+
+def get_urls(html_data):
+    html = etree.HTML(html_data.text)
+    urls = html.xpath('//div[@class="bili-video-card__wrap"]/a[1]/@href')
     return urls
-list_temp = []
-lists = []
-
-with open('d:/scripyoutput/keywords.txt','r') as f:
-    li = f.readlines()
-    for l in li:
-        list_temp.append(l.strip())
 
 
-for url in list_temp:
-    new_urls = get_more_url(url=url)
-    for new_url in new_urls:
-        if len(new_url) >30:
+with open('d:/scripyoutput/key_words_list.txt','r',encoding='utf-8') as f:
+    key_words_list = f.readlines()
+    print('本次搜索关键词的个数为：  '+len(key_words_list))
+    new_list_urls = []
+    for key_word in key_words_list:
+        html_data = get_response(f'https://search.bilibili.com/all?keyword={key_word.strip()}')
+        list_urls = get_urls(html_data)
 
-            f_url = 'https://www.bilibili.com/' + new_url[1:20] + '?vd_source=80161c470f0c8f2830b2fd56486966df'
-            lists.append(f_url)
+        for url in list_urls:
 
-lists = list(set(lists))
-with open('d:/scripyoutput/list.txt','w') as f:
-    for url in lists:
-        f.write(url+'\n')
+            if len(url)<100:
+                new_url = 'https://'+url[2:-1]
+                new_list_urls.append(new_url)
+        print('关键词:  ' + key_word.strip() + "搜索列表已生成——————————————————————")
+        sleep(3)
+with open('d:/scripyoutput/list.txt','w',encoding='utf-8') as f:
+    for url in new_list_urls:
+        f.write(url+'/?vd_source=80161c470f0c8f2830b2fd56486966df'+'\n')
+    print('共生成搜索列表的长度为：   '+len(new_list_urls)+'-------------------------------')
+
+prompt = "\n  所有任务已经全部完成--------请输入'q'退出程序界面 :   "
+message = ''
+while message != 'q':
+    message = input(prompt)
