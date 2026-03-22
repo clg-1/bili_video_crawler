@@ -1,0 +1,113 @@
+import requests
+import re
+import json
+import subprocess
+import os
+from time import sleep
+
+def get_response(html_url):
+    headers = {'referer': 'https://www.bilibili.com/',
+               'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.3'}
+    response = requests.get(url=html_url,headers=headers)
+    return response
+
+def get_video_info(html_url):
+    response = get_response(html_url=html_url)
+    title = re.findall('<meta data-vue-meta="true" itemprop="name" name="title" content="(.*?)_哔哩哔哩_bilibili">', response.text)[0]  # 标题
+    title = title.replace(" ", "")  # 文件名需要去空格
+    html_data = re.findall('<script>window.__playinfo__=(.*?)</script>', response.text)[0]  # 播放信息
+    json_data = json.loads(html_data)
+    # pprint.pprint(json_data)
+    audio_url = json_data['data']['dash']['audio'][0]['baseUrl']
+    video_url = json_data['data']['dash']['video'][0]['baseUrl']
+    video_info = [title, audio_url, video_url]
+    return video_info
+
+def save(title, audio_url, video_url):
+    print('开始保存文件>>>>>>',title)
+    audio_content = get_response(html_url=audio_url).content
+    video_content = get_response(html_url=video_url).content
+
+    with open('d:/scripyoutput/temp/'+ title + '.mp3', mode='wb') as f:
+      f.write(audio_content)
+    print(title + '.mp3，  保存成功----------')
+
+    with open('d:/scripyoutput/temp/'+ title + '.mp4', mode='wb') as f:
+        f.write(video_content)
+
+    with open('d:/scripyoutput/log.txt', mode='a') as f:
+
+        f.write(title+'\n')
+    print( title + '.mp4  保存成功-------')
+
+
+def merge_data():
+    f = open('d:/scripyoutput/log.txt', "r")
+    video_list = f.readlines()
+    f.close()
+    for line in video_list:
+        video_name = line.split()[0]
+        try:
+            # cmd = f'@echo off'
+            cmd = f"ffmpeg -i d:/scripyoutput/temp/{video_name}.mp4 -i d:/scripyoutput/temp/{video_name}.mp3 -c:v copy -c:a aac -strict experimental d:/scripyoutput/merged/{video_name}.mp4/n"
+            subprocess.run(cmd, shell=True)
+        except:
+            pass
+
+        print(video_name, '合成成功----------')
+
+
+def del_temp():
+    print('开始清理临时文件')
+    f = open('d:/scripyoutput/log.txt', "r")
+    video_list = f.readlines()
+    f.close()
+    for name in video_list:
+        name = name.split()[0]
+        file_path_mp3 = f"d:/scripyoutput/temp/{name}.mp3"
+        if os.path.isfile(file_path_mp3):
+            os.remove(file_path_mp3)
+            print(name +'.mp3,已删除')
+        else:
+            print(name +".mp3 不存在")
+
+        file_path_mp4 = f"d:/scripyoutput/temp/{name}.mp4"
+        if os.path.isfile(file_path_mp4):
+            os.remove(file_path_mp4)
+            print(name + '.mp4,已删除')
+        else:
+            print(name +".pm4  不存在")
+    sleep(5)
+
+    with open("d:/scripyoutput/list.txt", "w") as f:
+        f.write('')
+    with open("d:/scripyoutput/log.txt", "w") as f:
+        f.write('')
+    print("临时文件清理干净.....")
+
+
+
+def main():
+    # 下载
+
+    f = open('d:/scripyoutput/list.txt', 'r')
+    url_list = f.readlines()
+    f.close()
+    for url in url_list:
+        try:
+            video_info = get_video_info(url)
+            save(video_info[0], video_info[1], video_info[2])
+            sleep(1)
+        except:
+            pass
+
+    sleep(3)
+    # 合成
+    merge_data()
+    sleep(3)
+    #清理
+    del_temp()
+
+
+
+main()
